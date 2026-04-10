@@ -1,0 +1,118 @@
+---
+title: "Minimizer class: Boolean minimization API reference"
+description: "Complete reference for the Minimizer C++ class — constructor, minimize(), printTruthTable(), printMintermGroups(), and printEPITable() methods with parameters and behavior."
+---
+
+The `Minimizer` class is the primary interface for Boolean minimization. It accepts a truth table string, runs the Quine–McCluskey algorithm, and returns the minimized expression.
+
+```cpp
+#include "minimizer.h"
+```
+
+## Constructor
+
+**Signature:** `Minimizer(string in)`
+
+Constructs a `Minimizer` from a binary string representing the output column of a truth table. The constructor validates the input, initializes the truth table, and identifies the minterm indices.
+
+<ParamField path="in" type="string" required>
+  The truth table output column as a binary string. Length must be a power of 2. Use `'1'` for rows where the function output is true and `'0'` for rows where it is false. Don't-care values (`'x'`/`'X'`) are parsed by the constructor but are not officially supported.
+</ParamField>
+
+Throws a `runtime_error` if the length of `in` is not a power of 2.
+
+```cpp
+// 3-variable truth table: 8 rows
+Minimizer m("10110100");
+```
+
+## Public methods
+
+### minimize()
+
+**Signature:** `string minimize()`
+
+Runs the full Quine–McCluskey minimization algorithm and returns the minimized Boolean equation as a string in sum-of-products notation.
+
+**Returns:** The minimized Boolean equation. Returns `"1"` if the function is always true (tautology) and `"0"` if the function is always false. Otherwise, returns a `+`-separated sum of product terms using variables `A`, `B`, `C`, … with `!` as the NOT operator (e.g., `"!AC+B!C"`).
+
+**Side effects:** Calls `printTruthTable()` once and `printMintermGroups()` after each pairing iteration, printing to stdout throughout the algorithm. `printEPITable()` is a separate public method and is not called by `minimize()`.
+
+Throws a `runtime_error` if a bug is encountered during essential prime implicant selection (uncoverable minterms).
+
+```cpp
+Minimizer m("10110100");
+string equation = m.minimize();
+// prints truth table and minterm groups to stdout, then:
+// equation == "!AC+B!C" (example)
+```
+
+<Note>
+  `minimize()` automatically calls `printTruthTable()` once and `printMintermGroups()` after each pairing iteration as side effects — this output goes to stdout. `printEPITable()` is not called automatically; invoke it manually if you need to inspect the coverage table.
+</Note>
+
+---
+
+### printTruthTable()
+
+**Signature:** `void printTruthTable()`
+
+Prints the full truth table to stdout. Each row shows all variable columns followed by a separator and the output column value.
+
+```
+Truth Table (3 variables)
+0 0 0 | 1
+0 0 1 | 0
+0 1 0 | 1
+...
+```
+
+---
+
+### printMintermGroups()
+
+**Signature:** `void printMintermGroups()`
+
+Prints the current state of the minterm groups to stdout. For each group (keyed by number of 1-bits), every minterm entry shows its covered minterm indices, `isDontCare` status, and binary representation.
+
+```
+Group 1
+   Minterm(s) Value(s): 2
+   Is IDC: 0
+   010
+Group 2
+   Minterm(s) Value(s): 3 5
+   Is IDC: 0
+   0-1
+...
+```
+
+---
+
+### printEPITable()
+
+**Signature:** `void printEPITable()`
+
+Prints the Essential Prime Implicants table to stdout. Each row shows a prime implicant (by the original minterm indices it covers) alongside the boolean coverage mapping for each original minterm.
+
+```
+--- EPI Table ---
+Minterm containing: 2 3 ==> ( 2, 1 ) ( 3, 1 ) ( 5, 0 )
+...
+```
+
+---
+
+## Usage example
+
+```cpp
+#include "minimizer.h"
+#include <iostream>
+using namespace std;
+
+int main() {
+    Minimizer m("10110100");
+    cout << m.minimize() << endl;
+    return 0;
+}
+```

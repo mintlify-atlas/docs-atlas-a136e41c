@@ -1,0 +1,74 @@
+---
+title: "How to encode a truth table as an input string"
+description: "Learn how to encode any Boolean function as an input string for QMA Boolean Minimization — one character per truth table row, length must be a power of 2."
+---
+
+The QMA Boolean Minimization tool accepts a single command-line argument: a binary string that encodes the output column of a truth table. Each character in the string corresponds to one row of the truth table, read from top to bottom in standard binary order (where A is the most significant bit). The tool reads this string, identifies which rows produce an output of `1`, and computes the minimal sum-of-products expression that covers exactly those rows.
+
+## How positions map to truth table rows
+
+The input string is indexed from position `0` (the first character) to position `n-1` (the last character). Position `i` corresponds to the truth table row whose variable assignment is the binary representation of `i`, with the most significant bit assigned to variable A.
+
+For a 3-variable function (8 rows), the position-to-variable mapping is:
+
+| Position | A | B | C |
+| -------- | - | - | - |
+| 0        | 0 | 0 | 0 |
+| 1        | 0 | 0 | 1 |
+| 2        | 0 | 1 | 0 |
+| 3        | 0 | 1 | 1 |
+| 4        | 1 | 0 | 0 |
+| 5        | 1 | 0 | 1 |
+| 6        | 1 | 1 | 0 |
+| 7        | 1 | 1 | 1 |
+
+## Length rule
+
+The string length must be exactly 2^n for some positive integer n, where n is the number of variables in your function. A string of length 2 represents a 1-variable function, a string of length 4 represents a 2-variable function, and so on.
+
+| String length | Number of variables |
+| ------------- | ------------------- |
+| 2             | 1                   |
+| 4             | 2                   |
+| 8             | 3                   |
+| 16            | 4                   |
+| 32            | 5                   |
+| 64            | 6                   |
+
+<Warning>
+If the string length is not a power of 2, the tool will throw a runtime error: `Your input string's length is not a power of 2.`
+</Warning>
+
+## Valid characters
+
+Each character in the string must be either:
+
+- `1` — the function output is **true** for this row (this row is a minterm)
+- `0` — the function output is **false** for this row
+
+<Warning>
+Don't-care values (X) are not currently supported — use only `0` and `1`.
+</Warning>
+
+## Concrete example: 3-variable function
+
+The input string `01101001` encodes the following 3-variable truth table:
+
+```text
+A B C | Output
+------+-------
+0 0 0 | 0      <- position 0: '0'
+0 0 1 | 1      <- position 1: '1'
+0 1 0 | 1      <- position 2: '1'
+0 1 1 | 0      <- position 3: '0'
+1 0 0 | 1      <- position 4: '1'
+1 0 1 | 0      <- position 5: '0'
+1 1 0 | 0      <- position 6: '0'
+1 1 1 | 1      <- position 7: '1'
+```
+
+The minterms (rows where the output is `1`) are at positions 1, 2, 4, and 7.
+
+<Tip>
+For n variables, your string must be exactly 2^n characters long. Count the rows in your truth table and verify that count is a power of 2 before constructing the string.
+</Tip>

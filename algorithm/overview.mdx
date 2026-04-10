@@ -1,0 +1,43 @@
+---
+title: "Quine–McCluskey algorithm: how QMA minimization works"
+description: "An overview of the Quine–McCluskey algorithm as implemented in QMA Boolean Minimization, covering minterm grouping, prime implicant reduction, and EPI selection."
+---
+
+The Quine–McCluskey algorithm (QMA) is a systematic method for minimizing Boolean functions to their minimal sum-of-products form. Unlike heuristic approaches, it guarantees an exact minimal cover — meaning the output is provably the shortest Boolean expression that satisfies the truth table. The trade-off is complexity: the algorithm is exponential in the number of variables, making it practical for small-to-medium functions but computationally expensive for large ones.
+
+<Info>
+  This implementation follows the classical QMA exactly — it guarantees a minimal cover but not necessarily a unique one.
+</Info>
+
+## Algorithm stages
+
+The `Minimizer::minimize()` method orchestrates the four main stages of the algorithm in sequence.
+
+<Steps>
+  <Step title="Truth table construction">
+    The `Minimizer` constructor receives a binary string whose length must be a power of 2. It derives the number of variables as `log2(length)` and builds the truth table by computing each variable's column using alternating run-length patterns. Every position in the input string where the character is `1` is recorded as a minterm index.
+  </Step>
+  <Step title="Initial minterm grouping">
+    `groupMinterms()` converts each minterm index to its binary representation and sorts the minterms into buckets keyed by their popcount — the number of `1` bits in the binary string. Minterms with the same popcount form a group. This grouping is the foundation for the pairing step that follows.
+  </Step>
+  <Step title="Iterative pairing">
+    `pairCloseMinterms()` compares minterms in adjacent groups. If two minterms differ in exactly one bit position, they are merged into a new, combined minterm whose binary representation uses `-` (dash) for the eliminated variable. Both source minterms are marked as matched. The process repeats — each round producing a new, more condensed set of groups — until no further pairs are found. Any minterm that was never matched in a round is a prime implicant candidate and is carried forward unchanged.
+  </Step>
+  <Step title="EPI selection">
+    `initializeEPITable()` builds a 2D coverage table mapping each remaining prime implicant to the set of original minterms it covers. `findEPIs()` then scans this table to identify essential prime implicants — those that are the sole cover for at least one original minterm. If the essential primes do not cover all original minterms, a brute-force search over the non-essential primes finds the smallest additional subset needed. The result is the minimal cover.
+  </Step>
+</Steps>
+
+## Complexity
+
+The Quine–McCluskey algorithm has exponential worst-case complexity. The iterative pairing stage can produce a number of prime implicants that grows exponentially with the number of variables. The EPI selection stage compounds this: when essential primes alone do not cover all minterms, `findEPIs()` enumerates the full power set of non-essential prime implicants to find the minimum supplementary cover.
+
+<Warning>
+  The brute-force fallback has **O(2^k)** complexity where `k` is the number of non-essential prime implicants. For large functions with many non-essential primes, this can be slow.
+</Warning>
+
+## Limitations
+
+- **Input length must be a power of 2.** The constructor throws a `runtime_error` if the input string length does not satisfy this requirement.
+- **Don't-care values are not supported.** The tool only accepts `1` and `0` characters. Passing `X` characters is parsed by the code but documented as unsupported behavior.
+- **Output term order is non-deterministic.** Prime implicants are stored in hash-based containers (`unordered_set`, `unordered_map`), so the order of terms in the output expression varies between runs.

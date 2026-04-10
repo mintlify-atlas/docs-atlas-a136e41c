@@ -1,0 +1,63 @@
+---
+title: "QMA Boolean Minimization: C++ Boolean logic simplifier"
+description: "QMA Boolean Minimization is a C++ library and CLI tool that reduces Boolean expressions to minimal sum-of-products form via the Quine–McCluskey algorithm."
+---
+
+QMA Boolean Minimization is a C++ library and command-line tool that simplifies Boolean functions using the Quine–McCluskey algorithm. Given any Boolean function expressed as a truth table output string, the tool produces the minimal sum-of-products (SOP) representation — the simplest possible Boolean equation that matches your truth table exactly.
+
+## What the tool does
+
+You provide a string of `0`s and `1`s representing the output column of a truth table, one character per row. The tool parses that string, derives the number of variables from its length, groups minterms by the number of set bits, and iteratively combines them into prime implicants. It then selects the minimal cover using an Essential Prime Implicants (EPI) table, with a brute-force fallback for cases not fully resolved by the EPI step.
+
+The result is a single Boolean equation printed to standard output.
+
+**Key constraints:**
+
+- The input string length must be a power of 2 (2, 4, 8, 16, 32, 64, …). The tool infers the number of variables as log₂(length).
+- Only `0` and `1` characters are supported. Don't-care values (`X`) are not currently handled in the documented interface.
+
+## What you get
+
+The output is a sum-of-products Boolean expression. Variables are named alphabetically starting from `A`, with `!` denoting logical NOT (negation) and `+` denoting logical OR between product terms.
+
+For example, a 5-variable minimization might return:
+
+```text
+A!BCE+B!CD+!AB!C+AB!DE+!A!BD
+```
+
+Each term is a product (AND) of literals. A bare letter means the variable is uncomplemented; `!` before a letter means it is complemented. The `+` operator combines terms in a logical OR. Variables that do not appear in a term are eliminated — they have no effect on that term's output.
+
+## Use cases
+
+<CardGroup cols={2}>
+  <Card title="Logic circuit simplification" icon="microchip" href="/usage/examples">
+    Reduce gate count in digital circuits by finding the minimal SOP expression for a combinational logic function defined by its truth table.
+  </Card>
+  <Card title="Boolean algebra study" icon="graduation-cap" href="/usage/input-format">
+    Verify hand-worked Karnaugh map and Quine–McCluskey solutions, or explore how different truth tables map to minimal equations.
+  </Card>
+  <Card title="Embedding in C++ projects" icon="brackets-curly" href="/api/minimizer">
+    Use the `Minimizer` class directly in your own C++ code to minimize Boolean functions programmatically without the CLI.
+  </Card>
+  <Card title="Worked examples" icon="flask" href="/usage/examples">
+    See end-to-end examples with truth tables, step-by-step intermediate output, and the final minimized equation.
+  </Card>
+</CardGroup>
+
+## Explore the docs
+
+<CardGroup cols={2}>
+  <Card title="Quickstart" icon="rocket" href="/quickstart">
+    Compile the tool and produce your first minimized equation in minutes.
+  </Card>
+  <Card title="Input format" icon="table" href="/usage/input-format">
+    Learn how to encode a truth table as an input string.
+  </Card>
+  <Card title="Examples" icon="flask" href="/usage/examples">
+    Browse worked examples with annotations.
+  </Card>
+  <Card title="API reference" icon="code" href="/api/minimizer">
+    Integrate the `Minimizer` class into your own C++ project.
+  </Card>
+</CardGroup>

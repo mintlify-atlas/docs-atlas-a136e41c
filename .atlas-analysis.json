@@ -1,0 +1,63 @@
+{
+  "projectType": "cli-tool",
+  "projectName": "QMA Boolean Minimization",
+  "projectDescription": "A C++ command-line tool that minimizes Boolean functions using the Quine–McCluskey algorithm, producing a minimal sum-of-products expression from a truth table input.",
+  "theme": "aspen",
+  "primaryColor": "#2D6A4F",
+  "lightColor": "#52B788",
+  "darkColor": "#1B4332",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": ["introduction", "quickstart"]
+          },
+          {
+            "group": "Usage Guide",
+            "pages": ["usage/input-format", "usage/output-format", "usage/examples"]
+          },
+          {
+            "group": "Algorithm",
+            "pages": ["algorithm/overview", "algorithm/prime-implicants", "algorithm/epi-table"]
+          }
+        ]
+      },
+      {
+        "tab": "API Reference",
+        "groups": [
+          {
+            "group": "Classes",
+            "pages": ["api/minimizer", "api/minterm"]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Minimizes Boolean functions from a truth table output string",
+    "Implements the Quine–McCluskey (QMA) algorithm for exact minimization",
+    "Groups minterms iteratively by number of 1s and pairs close minterms",
+    "Builds an Essential Prime Implicants (EPI) table to find a minimal cover",
+    "Falls back to brute-force power-set search for optimal non-essential coverage",
+    "Outputs a minimal sum-of-products Boolean expression",
+    "Prints intermediate truth table, minterm groups, and EPI table for debugging"
+  ],
+  "publicApiSurface": [
+    "Minimizer(string in) — constructor accepting truth table output as a binary string",
+    "string Minimizer::minimize() — runs the full QMA algorithm and returns the minimized Boolean equation",
+    "void Minimizer::printTruthTable() — prints the full truth table to stdout",
+    "void Minimizer::printMintermGroups() — prints current minterm groups to stdout",
+    "void Minimizer::printEPITable() — prints the Essential Prime Implicants table to stdout",
+    "Minterm(int mv, bool dc, string ab) — construct a single minterm",
+    "Minterm(const Minterm& m1, const Minterm& m2, string ab) — construct a combined minterm",
+    "string Minterm::getAsBinary() const — returns binary representation",
+    "string Minterm::getAsLogic() const — returns logic expression (e.g. A!BC)",
+    "vector<int> Minterm::getMintermValues() const — returns covered minterm indices",
+    "bool Minterm::contains(int elem) const — checks if a minterm covers a given index",
+    "bool Minterm::isDontCare() const — checks if minterm is a don't-care",
+    "CLI: ./minimize [n-bit string] — minimize from command line where n is a power of 2"
+  ]
+}

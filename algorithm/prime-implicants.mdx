@@ -1,0 +1,69 @@
+---
+title: "Prime implicants: minterm grouping and pairing reduction"
+description: "How QMA Boolean Minimization groups minterms by popcount and iteratively pairs adjacent groups to produce the complete set of prime implicants."
+---
+
+Before the algorithm can select a minimal cover, it must first identify all prime implicants — the maximally combined minterms that can no longer be merged with any other. QMA Boolean Minimization does this in two phases: an initial grouping of minterms by popcount, followed by iterative pairing of adjacent groups until no further merges are possible.
+
+## What is a minterm?
+
+A minterm is a row in the truth table where the output is `1`. Each minterm is identified by its row index and its binary representation — the values of all input variables at that row. For example, in a 3-variable truth table, row 5 has index `5` and binary representation `101`, meaning variables A=1, B=0, C=1.
+
+The `Minterm` class stores both the index (or set of indices for combined minterms) and the binary string. Once minterms are combined, their binary string uses `-` to mark eliminated variables.
+
+## Initial grouping
+
+`groupMinterms()` converts every minterm index to its binary representation and places it in a bucket keyed by its popcount — the number of `1` bits. Minterms with the same popcount cannot be combined with each other (they differ in at least two bits), so grouping them separately avoids redundant comparisons.
+
+For example, given minterms 1, 2, 3, and 5 in a 3-variable function:
+
+| Minterm | Binary | Popcount | Group |
+|---------|--------|----------|-------|
+| 1       | `001`  | 1        | 1     |
+| 2       | `010`  | 1        | 1     |
+| 3       | `011`  | 2        | 2     |
+| 5       | `101`  | 2        | 2     |
+
+Group 1 = {1, 2}, Group 2 = {3, 5}.
+
+## Pairing close minterms
+
+`pairCloseMinterms()` iterates over adjacent groups and compares every minterm in group *n* with every minterm in group *n+1*. Two minterms can be paired if their binary strings differ in exactly one bit position — the "off-by-one" rule implemented by `isOffByOne()`.
+
+When two minterms are paired:
+- Both are marked as matched via `setMatched(true)`.
+- A new combined minterm is created whose binary string replaces the differing bit with `-`.
+- The combined minterm is assigned to a new group keyed by its remaining `1`-count.
+
+For example, minterms `001` and `011` differ only at bit position 1, so they combine to `0-1`:
+
+```text
+001  (minterm 1)
+011  (minterm 3)
+───
+0-1  (combined: variable B eliminated)
+```
+
+After one pairing pass, the algorithm repeats with the new groups. Any minterm that was not matched in a round is a prime implicant candidate and is carried forward unchanged into the next round. The process continues until `pairCloseMinterms()` returns `false` — indicating no pairs were found — at which point all remaining minterms are prime implicants.
+
+<Tip>
+  A minterm marked as "matched" was absorbed into a larger implicant — unmatched minterms carried forward become prime implicant candidates.
+</Tip>
+
+## Binary representation
+
+The binary string stored in each `Minterm` tracks which variables remain active. Each character position corresponds to a variable (position 0 = A, position 1 = B, and so on):
+
+- `1` — the variable appears uncomplemented in the term
+- `0` — the variable appears complemented (negated)
+- `-` — the variable has been eliminated by pairing
+
+`getAsLogic()` converts this binary string back to a human-readable logic term. For a 3-variable function, the binary string `0-1` maps as follows:
+
+| Position | Character | Variable contribution |
+|----------|-----------|-----------------------|
+| 0        | `0`        | `!A` (A is negated)   |
+| 1        | `-`        | *(eliminated)*         |
+| 2        | `1`        | `C`                   |
+
+The resulting logic term is `!AC`.

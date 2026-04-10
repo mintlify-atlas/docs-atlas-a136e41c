@@ -1,0 +1,167 @@
+---
+title: "Minterm class: prime implicant data structure reference"
+description: "Complete reference for the Minterm C++ class used internally by Minimizer — constructors, accessor methods, equality operator, and the custom hash function."
+---
+
+The `Minterm` class represents a single minterm or a combined prime implicant in the Quine–McCluskey algorithm. It stores the covered minterm indices, binary representation, and whether the minterm is a don't-care. As the algorithm iterates, individual minterms are merged into combined implicants using the two-argument constructor.
+
+```cpp
+#include "minterm.h"
+```
+
+<Note>
+  `Minterm` is primarily used internally by `Minimizer`. You typically do not construct `Minterm` objects directly unless embedding the library in custom code.
+</Note>
+
+## Constructors
+
+### Single minterm constructor
+
+**Signature:** `Minterm(int mv, bool dc, string ab)`
+
+Creates a `Minterm` representing a single row of the truth table.
+
+<ParamField path="mv" type="int" required>
+  The integer index of this minterm — the 0-based row number in the truth table.
+</ParamField>
+
+<ParamField path="dc" type="bool" required>
+  Whether this is a don't-care minterm (`true` if the input string contained `'x'` or `'X'` at this position).
+</ParamField>
+
+<ParamField path="ab" type="string" required>
+  The binary string representation of the minterm value (e.g., `"011"` for minterm index 3 with 3 variables).
+</ParamField>
+
+```cpp
+// Minterm for row 3 (binary "011"), not a don't-care
+Minterm mt(3, false, "011");
+```
+
+---
+
+### Combined minterm constructor
+
+**Signature:** `Minterm(const Minterm& m1, const Minterm& m2, string ab)`
+
+Creates a new `Minterm` by merging two existing minterms that differ in exactly one bit position. The resulting minterm covers all original indices from both inputs. The `dontCare` field is set to `false` on combined minterms.
+
+<ParamField path="m1" type="const Minterm&" required>
+  The first minterm to merge.
+</ParamField>
+
+<ParamField path="m2" type="const Minterm&" required>
+  The second minterm to merge. Its binary representation must differ from `m1` in exactly one bit position.
+</ParamField>
+
+<ParamField path="ab" type="string" required>
+  The combined binary string with `'-'` replacing the eliminated (differing) bit position (e.g., `"0-1"` when merging `"001"` and `"011"`).
+</ParamField>
+
+```cpp
+Minterm a(1, false, "001");
+Minterm b(3, false, "011");
+// Merge: differ at position 1, eliminated with '-'
+Minterm combined(a, b, "0-1");
+```
+
+---
+
+## Public methods
+
+### getAsBinary()
+
+**Signature:** `string getAsBinary() const`
+
+**Returns:** The binary string representation of this minterm or implicant. Eliminated variable positions are represented as `'-'`.
+
+```cpp
+Minterm mt(3, false, "011");
+mt.getAsBinary(); // "011"
+```
+
+---
+
+### getAsLogic()
+
+**Signature:** `string getAsLogic() const`
+
+**Returns:** The Boolean product term for this implicant as a string. Variables are named `A`, `B`, `C`, … (position 0 is the MSB, mapped to `A`). A `'1'` bit produces the variable name; a `'0'` bit produces `!` followed by the variable name; a `'-'` bit is omitted entirely.
+
+```cpp
+// Binary "0-1" with 3 variables → !AC
+Minterm mt(/* combined */, /* combined */, "0-1");
+mt.getAsLogic(); // "!AC"
+```
+
+---
+
+### getMintermValues()
+
+**Signature:** `vector<int> getMintermValues() const`
+
+**Returns:** A vector of all original minterm indices (truth table row numbers) that this implicant covers. For a single-minterm object this will contain exactly one element; for combined implicants it will contain all merged indices.
+
+```cpp
+// combined covers rows 1 and 3
+combined.getMintermValues(); // {1, 3}
+```
+
+---
+
+### contains()
+
+**Signature:** `bool contains(int elem) const`
+
+**Returns:** `true` if `elem` is present in the `mintermValues` vector, `false` otherwise.
+
+<ParamField path="elem" type="int" required>
+  The minterm index to search for.
+</ParamField>
+
+```cpp
+combined.contains(3); // true
+combined.contains(5); // false
+```
+
+---
+
+### isDontCare()
+
+**Signature:** `bool isDontCare() const`
+
+**Returns:** `true` if this minterm was constructed as a don't-care entry (i.e., `dc` was `true` in the single-minterm constructor). Combined minterms always return `false`.
+
+---
+
+### setMatched() / isMatched()
+
+**Signatures:** `void setMatched(bool b)` / `bool isMatched()`
+
+Used internally by `Minimizer` during the iterative pairing phase to track whether a minterm has been successfully paired with another. `setMatched(true)` marks the minterm as paired; `isMatched()` reads the current state. Unpaired minterms at the end of a pairing round are carried forward as prime implicant candidates.
+
+---
+
+### operator==()
+
+**Signature:** `bool operator==(const Minterm& other) const`
+
+Equality is based on three fields compared together:
+
+- `mintermValues` — compared as sets (order-independent via sort)
+- `asBinary` — exact string match
+- `dontCare` — boolean match
+
+**Returns:** `true` if all three fields are equal.
+
+---
+
+## Hash function
+
+`Minterm::hash_fn` is a nested struct that provides a hash for `Minterm` objects, suitable for use as the hash template parameter in `unordered_map` and `unordered_set`. The hash is derived from the `mintermValues` vector.
+
+```cpp
+// Use Minterm as a key in an unordered container
+unordered_set<Minterm, Minterm::hash_fn> mySet;
+unordered_map<Minterm, bool, Minterm::hash_fn> myMap;
+```

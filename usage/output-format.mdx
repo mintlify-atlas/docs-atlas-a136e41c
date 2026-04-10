@@ -1,0 +1,66 @@
+---
+title: "Understanding the minimized Boolean expression output"
+description: "Understand the sum-of-products notation QMA Boolean Minimization uses to express minimized Boolean functions, including variable names and operators."
+---
+
+When you run the tool, it prints the minimized Boolean function as a sum-of-products expression — a set of product terms (AND combinations of variables) joined by OR operators. This is the most compact representation that evaluates to `1` for every row in your truth table where the output is `1`, and to `0` for all other rows.
+
+## Variable naming convention
+
+Variables are named using uppercase letters starting from A. The first variable (A) corresponds to the most significant bit of the truth table row index, and each subsequent letter represents the next less significant bit.
+
+| Variable | Bit position |
+| -------- | ------------ |
+| A        | Most significant |
+| B        | Second         |
+| C        | Third          |
+| D        | Fourth         |
+| E        | Fifth (least significant for 5-variable functions) |
+
+## Operator notation
+
+| Symbol | Meaning | Example |
+| ------ | ------- | ------- |
+| `+`    | OR — separates product terms | `AB+CD` |
+| (none) | AND — adjacent variables are ANDed | `ABC` means A AND B AND C |
+| `!`    | NOT — prefixes a variable to negate it | `!A` means NOT A |
+
+## Parsing examples
+
+```text
+A!BCE
+```
+
+Read as: A AND (NOT B) AND C AND E. Variable D is absent, meaning it is a "don't care" — the term covers rows where D is either 0 or 1.
+
+```text
+A!BCE+B!CD+!AB!C
+```
+
+Read as three product terms ORed together:
+- `A!BCE` — A AND (NOT B) AND C AND E
+- `B!CD` — B AND (NOT C) AND D
+- `!AB!C` — (NOT A) AND B AND (NOT C)
+
+## Special outputs
+
+| Output | Meaning |
+| ------ | ------- |
+| `1`    | The function is always true — every row in the truth table maps to 1 |
+| `0`    | The function is always false — no rows map to 1 (no minterms) |
+
+## Output term order
+
+<Note>
+The order of product terms in the output may vary between runs. The internal data structures use unordered maps and sets, so the terms are not guaranteed to appear in any particular sequence. The expression is logically equivalent regardless of term order.
+</Note>
+
+## Example: 5-variable function
+
+For the 5-variable input from the README (`00110011111100000000010101110100`), the tool produces:
+
+```text
+A!BCE+B!CD+!AB!C+AB!DE+!A!BD
+```
+
+This expression has five product terms covering all 13 minterms in the truth table. Each term uses the variable naming and operator conventions described above.

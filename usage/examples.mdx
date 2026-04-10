@@ -1,0 +1,144 @@
+---
+title: "Boolean minimization examples and worked solutions"
+description: "Step-by-step examples showing how to use QMA Boolean Minimization with truth tables of different sizes, from simple 2-variable to complex 5-variable functions."
+---
+
+These examples walk through the full process of encoding a truth table as an input string, running the tool, and interpreting the minimized Boolean expression. Each example uses a different number of variables to illustrate how the input length scales.
+
+## Example 1: 2-variable function (4 rows)
+
+This function outputs `1` when both inputs match (A=B=0 or A=B=1), which is the XNOR function.
+
+**Input string:** `1001`
+
+```text
+A B | Output
+----+-------
+0 0 | 1      <- position 0: '1'  (minterm)
+0 1 | 0      <- position 1: '0'
+1 0 | 0      <- position 2: '0'
+1 1 | 1      <- position 3: '1'  (minterm)
+```
+
+**Run the tool:**
+
+```bash
+./minimize 1001
+```
+
+The minterms are at positions 0 and 3. Position 0 (`00` in binary) contributes `!A!B`, and position 3 (`11` in binary) contributes `AB`. The tool produces:
+
+```text
+!A!B+AB
+```
+
+This is the standard sum-of-products form of the 2-variable XNOR function.
+
+---
+
+## Example 2: 3-variable function (8 rows)
+
+This example uses the input string `01101001`.
+
+**Input string:** `01101001`
+
+```bash
+./minimize 01101001
+```
+
+```text
+A B C | Output
+------+-------
+0 0 0 | 0      <- position 0: '0'
+0 0 1 | 1      <- position 1: '1'  (minterm)
+0 1 0 | 1      <- position 2: '1'  (minterm)
+0 1 1 | 0      <- position 3: '0'
+1 0 0 | 1      <- position 4: '1'  (minterm)
+1 0 1 | 0      <- position 5: '0'
+1 1 0 | 0      <- position 6: '0'
+1 1 1 | 1      <- position 7: '1'  (minterm)
+```
+
+The minterms are at positions 1, 2, 4, and 7. The Quine–McCluskey algorithm finds the minimal cover for these four minterms. The tool produces a minimized sum-of-products expression covering exactly those rows.
+
+<Note>
+The exact output term order may differ between runs because the internal data structures are unordered. The expression is logically equivalent regardless of term order.
+</Note>
+
+---
+
+## Example 3: 5-variable function (32 rows)
+
+This is the full example from the README. The input string encodes a 5-variable truth table with 32 rows.
+
+**Input string:** `00110011111100000000010101110100`
+
+```bash
+./minimize 00110011111100000000010101110100
+```
+
+The full truth table is:
+
+```text
+A B C D E | Output
+----------+-------
+0 0 0 0 0 | 0
+0 0 0 0 1 | 0
+0 0 0 1 0 | 1
+0 0 0 1 1 | 1
+0 0 1 0 0 | 0
+0 0 1 0 1 | 0
+0 0 1 1 0 | 1
+0 0 1 1 1 | 1
+0 1 0 0 0 | 1
+0 1 0 0 1 | 1
+0 1 0 1 0 | 1
+0 1 0 1 1 | 1
+0 1 1 0 0 | 0
+0 1 1 0 1 | 0
+0 1 1 1 0 | 0
+0 1 1 1 1 | 0
+1 0 0 0 0 | 0
+1 0 0 0 1 | 0
+1 0 0 1 0 | 0
+1 0 0 1 1 | 0
+1 0 1 0 0 | 0
+1 0 1 0 1 | 1
+1 0 1 1 0 | 0
+1 0 1 1 1 | 1
+1 1 0 0 0 | 0
+1 1 0 0 1 | 1
+1 1 0 1 0 | 1
+1 1 0 1 1 | 1
+1 1 1 0 0 | 0
+1 1 1 0 1 | 1
+1 1 1 1 0 | 0
+1 1 1 1 1 | 0
+```
+
+**Expected output:**
+
+```text
+A!BCE+B!CD+!AB!C+AB!DE+!A!BD
+```
+
+This five-term sum-of-products expression covers all 13 minterms (rows where output is `1`) in the table above. Each term can be verified by substituting the variable values from the covered rows:
+
+- `!AB!C` — covers rows where A=0, B=1, C=0 (positions 8, 9, 10, 11)
+- `!A!BD` — covers rows where A=0, B=0, D=1 (positions 2, 3, 6, 7)
+- `B!CD` — covers rows where B=1, C=0, D=1 (positions 9, 11, 25, 27)
+- `A!BCE` — covers rows where A=1, B=0, C=1, E=1 (positions 21, 23)
+- `AB!DE` — covers rows where A=1, B=1, D=0, E=1 (positions 25, 29)
+
+<Tip>
+For large inputs like the 32-character 5-variable string, use a shell variable or `echo` to avoid typos:
+
+```bash
+INPUT="00110011111100000000010101110100"
+./minimize "$INPUT"
+```
+</Tip>
+
+<Note>
+The order of terms in the output may differ from the example above. Because the tool uses unordered internal data structures, the product terms can appear in any sequence. All orderings represent the same Boolean function.
+</Note>

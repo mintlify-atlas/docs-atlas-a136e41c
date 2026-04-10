@@ -1,0 +1,51 @@
+---
+title: "Essential Prime Implicants table and minimal cover"
+description: "How QMA Boolean Minimization builds the Essential Prime Implicants table and selects the minimum set of prime implicants needed to cover all minterms."
+---
+
+Once iterative pairing is complete, the algorithm has a set of prime implicants — maximally combined minterms that can no longer be merged. The next step is to select the smallest subset of those prime implicants that still covers every original minterm. QMA Boolean Minimization does this by building an Essential Prime Implicants (EPI) table and applying a combination of deterministic selection and, when necessary, brute-force search.
+
+## What is the EPI table?
+
+The EPI table is a 2D coverage map. Rows represent prime implicants; columns represent the original minterms (the rows in the truth table where the output is `1`). A cell `(P, m)` is `true` if prime implicant `P` covers original minterm `m` — that is, if `m` is one of the minterm indices that were merged to form `P`.
+
+`initializeEPITable()` builds this table by iterating over every prime implicant remaining after pairing and checking, for each original minterm index, whether the prime implicant's `mintermValues` vector contains that index.
+
+<Note>
+  The EPI table is printed by `printEPITable()` for debugging. Call it after `initializeEPITable()` to inspect coverage before selection runs.
+</Note>
+
+## Finding essential primes
+
+`findEPIs()` scans each original minterm's column in the EPI table and counts how many prime implicants cover it:
+
+- **Count = 1** — exactly one prime implicant covers this minterm. That prime implicant is *essential* and must be included in the solution. It is added to the `essentials` set.
+- **Count > 1** — multiple prime implicants cover this minterm. No immediate decision is made; selection is deferred to the brute-force phase if needed.
+- **Count = 0** — no prime implicant covers this minterm. This can occur for don't-care entries; the minterm is re-added as a bare essential (not relevant for standard `0`/`1` inputs).
+
+## Handling uncovered minterms
+
+After collecting all essential prime implicants, `findEPIs()` checks whether the essentials alone cover every original minterm.
+
+<Steps>
+  <Step title="Check coverage">
+    Iterate over the original minterm list. For each minterm, check whether any essential prime implicant's `mintermValues` contains it.
+  </Step>
+  <Step title="If all covered — done">
+    If every original minterm is covered by the essential primes, the algorithm returns the `essentials` set immediately. No brute-force search is needed.
+  </Step>
+  <Step title="If some uncovered — brute-force search">
+    Build the list of non-essential prime implicants (all prime implicants not already in `essentials`). Enumerate every subset of this list (the full power set, `2^k` subsets where `k` is the number of non-essential primes). For each subset, check whether it covers all remaining uncovered minterms via `isSolutionToUnsatisfied()`. Track the smallest valid subset and add it to `essentials`.
+  </Step>
+</Steps>
+
+<Warning>
+  The brute-force fallback has **O(2^k)** complexity where `k` is the number of non-essential prime implicants. For large functions with many non-essential primes, this can be slow.
+</Warning>
+
+## Special cases
+
+Two degenerate inputs are handled before returning:
+
+- **All 1s input** — every truth table row is a minterm, so iterative pairing reduces everything to a single prime implicant whose binary string is all dashes (`---…`). `minimize()` detects this and returns `"1"`.
+- **All 0s input** — no minterms exist, so `findEPIs()` returns an empty set. `minimize()` detects the empty result and returns `"0"`.
